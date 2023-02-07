@@ -1,12 +1,13 @@
 # CS231A  
 ![img](/img/cs231a.png)
-This repo contains some codes of Stanford Univ. [CS231A: Computer Vision, From 3D Reconstruction to Recognition](https://web.stanford.edu/class/cs231a/index.html)' Problem Set.  
+This repo contains some codes of Stanford Univ. lecture [CS231A: Computer Vision, From 3D Reconstruction to Recognition](https://web.stanford.edu/class/cs231a/index.html)' Problem Set.  
   
 I'm not Stanford student but studied this lecture by myself.  
 and I thought it would be great if there is summary written in Korean.  
+that's why I made this repository and summary notes.
 So you guys are allowed to use my code and check for summary below.  
 
-Chapter | Title | 풀이 
+Chapter | Title | Note
  :--: | :--: | :--: |
 1 | [Camera Models](https://web.stanford.edu/class/cs231a/course_notes/01-camera-models.pdf) | [Note 1](https://faceyourfear.tistory.com/58), [Note 2](https://faceyourfear.tistory.com/59), [Note 3](https://faceyourfear.tistory.com/60), [Note 4](https://faceyourfear.tistory.com/61) |
 2 | [Single View Metrology](https://web.stanford.edu/class/cs231a/course_notes/02-single-view-metrology.pdf) | |
