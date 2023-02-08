@@ -4,13 +4,13 @@ This repo contains some codes of Stanford Univ. lecture [CS231A: Computer Vision
   
 I'm not Stanford student but studied this lecture by myself.  
 and I thought it would be great if there is summary written in Korean.  
-that's why I made this repository and summary notes.
+That's why I made this repository and summary notes.  
 So you guys are allowed to use my code and check for summary below.  
 
 Chapter | Title | Note
  :--: | :--: | :--: |
 1 | [Camera Models](https://web.stanford.edu/class/cs231a/course_notes/01-camera-models.pdf) | [Note 1](https://faceyourfear.tistory.com/58), [Note 2](https://faceyourfear.tistory.com/59), [Note 3](https://faceyourfear.tistory.com/60), [Note 4](https://faceyourfear.tistory.com/61) |
-2 | [Single View Metrology](https://web.stanford.edu/class/cs231a/course_notes/02-single-view-metrology.pdf) | |
+2 | [Single View Metrology](https://web.stanford.edu/class/cs231a/course_notes/02-single-view-metrology.pdf) | [Note 1](https://faceyourfear.tistory.com/64), working on... |
 3 | [Epipolar Geometry](https://web.stanford.edu/class/cs231a/course_notes/03-epipolar-geometry.pdf) | |
 4 | [Stereo Systems](https://web.stanford.edu/class/cs231a/course_notes/04-stereo-systems.pdf) | |
 5 | [Active and Volumetric Stereo](https://web.stanford.edu/class/cs231a/course_notes/05-active-volumetric-stereo.pdf) | |
