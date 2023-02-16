@@ -14,9 +14,11 @@ def part_a():
     u, s, v = None, None, None
 
     # BEGIN YOUR CODE HERE
-    u, s, v = np.linalg.svd(img1)
+    u, s, v = np.linalg.svd(img1, full_matrices=False)
+    # 'full_matrices' parameter isn't important here.
+
     # END YOUR CODE HERE
-    
+
     return u, s, v
 
 def part_b(u, s, v):
@@ -26,7 +28,10 @@ def part_b(u, s, v):
     rank1approx = None
 
     # BEGIN YOUR CODE HERE
-
+    u1 = u[:, 0:1]
+    s1 = s[0]
+    v1 = v[0:1, :]
+    rank1approx = s1 * np.dot(u1, v1)
     # END YOUR CODE HERE
 
     plt.figure()
@@ -40,7 +45,10 @@ def part_c(u, s, v):
     rank20approx = None
 
     # BEGIN YOUR CODE HERE
-
+    u1_to_20 = u[:, :20]
+    s1_to_20 = np.diag(s[:20])
+    v1_to_20 = v[:20, :]
+    rank20approx = np.dot(u1_to_20, np.dot(s1_to_20, v1_to_20))
     # END YOUR CODE HERE
 
     plt.figure()
@@ -51,3 +59,4 @@ if __name__ == '__main__':
     u, s, v = part_a()
     rank1approx = part_b(u, s, v)
     rank20approx = part_c(u, s, v)
+    plt.show()
