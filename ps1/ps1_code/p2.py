@@ -1,6 +1,6 @@
 # CS231A Homework 1, Problem 2
 import numpy as np
-
+np.set_printoptions(precision=3, suppress=True)
 '''
 DATA FORMAT
 
@@ -37,35 +37,15 @@ def compute_camera_matrix(real_XY, front_image, back_image):
     # Lastly, reshape and add the (0,0,0,1) row to M to have it be (3,4)
 
     # BEGIN YOUR CODE HERE
-    # print(real_XY)
-    # print(front_image)
-    # print(back_image)
+    p = np.vstack((front_image, back_image))
+    P = np.vstack((real_XY, real_XY))
+    z_coord = np.vstack((np.zeros((12, 1)).astype(float), np.full((12, 1), 150.)))
+    P = np.hstack((P, z_coord))
+    P = np.hstack((P, np.ones((24, 1))))
 
-    p = np.concatenate([front_image, back_image], axis=0)
-    print(p)
-
-    z_0 = np.ones((12, 2), dtype=float)
-    z_150 = np.ones((12, 2), dtype=float)
-    z_0[:, 0] = 0.
-    z_150[:, 0] = 150.
-    P_0 = np.hstack((real_XY, z_0))
-    P_150 = np.hstack((real_XY, z_150))
-    P = np.vstack([P_0, P_150])
-    print(P)
-
-    P_matrix = np.zeros((48, 12))
-    for i in range(48):
-        if i % 2 == 0:
-            P_matrix[i, 0:4] = P[i // 2, :]
-            P_matrix[i, -1] = -p[i // 2, 0]
-        else:
-            P_matrix[i, 4:8] = P[i // 2, :]
-            P_matrix[i, -1] = -p[i // 2, 1]
-    print(P_matrix)
-    u, s, v = np.linalg.svd(P_matrix, full_matrices=True)
-    print(v[:, -1])
-
-    return 1
+    M = np.linalg.lstsq(P, p, rcond=None)[0]
+    M = np.vstack((M.T, np.array([0., 0., 0., 1.])))
+    return M
     # END YOUR CODE HERE
 
 '''
@@ -81,7 +61,18 @@ Returns:
 '''
 def rms_error(camera_matrix, real_XY, front_image, back_image):
     # BEGIN YOUR CODE HERE
-    pass
+    # reshape 3D coordinates
+    P = np.hstack((real_XY.T, real_XY.T))
+    z_coord = np.hstack((np.zeros((1, 12)).astype(float), np.full((1, 12), 150.)))
+    P = np.vstack((P, z_coord))
+    P = np.vstack((P, np.ones((1, 24))))
+    # reshape 2D coordinates
+    p = np.hstack((front_image.T, back_image.T))
+    p = np.vstack((p, np.ones((1, 24))))
+
+    p_prime = np.dot(camera_matrix, P)
+    RMS = np.sqrt(np.sum(np.sum(np.square(p - p_prime), axis=0), axis=0) / 24)
+    return RMS
     # END YOUR CODE HERE
 
 if __name__ == '__main__':
@@ -91,6 +82,6 @@ if __name__ == '__main__':
     back_image = np.load('back_image.npy')
 
     camera_matrix = compute_camera_matrix(real_XY, front_image, back_image)
-    #print("Camera Matrix:\n", camera_matrix)
-    #print()
-    #print("RMS Error: ", rms_error(camera_matrix, real_XY, front_image, back_image))
+    print("Camera Matrix:\n", camera_matrix)
+    print()
+    print("RMS Error: ", rms_error(camera_matrix, real_XY, front_image, back_image))
