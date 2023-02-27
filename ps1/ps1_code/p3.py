@@ -2,6 +2,7 @@
 import numpy as np
 from utils import mat2euler
 import math
+np.set_printoptions(precision=3, suppress=True)
 
 '''
 COMPUTE_VANISHING_POINTS
@@ -41,6 +42,7 @@ Arguments:
 Returns:
     K - the intrinsic camera matrix (3x3 matrix)
 '''
+
 def compute_K_from_vanishing_points(vanishing_points):
     # BEGIN YOUR CODE HERE
     # We know v1^T*W*v2=v2^T*W*v3=v3^T*W*v1=0
@@ -58,13 +60,15 @@ def compute_K_from_vanishing_points(vanishing_points):
     _, _, Vt = np.linalg.svd(A)
     V = Vt.T
     x = V[:, -1]
-    W = np.array([[x[0], 0, x[1]],
-                  [0, x[0], x[2]],
+    W = np.array([[x[0],    0, x[1]],
+                  [   0, x[0], x[2]],
                   [x[1], x[2], x[3]]])
     # W = (KK^T)^{-1}
     # W = (K^T)^{-1}*K^{-1}
     K_tran_inv = np.linalg.cholesky(W)
-    K = np.linalg.inv(K_tran_inv).T
+    K = np.linalg.inv(K_tran_inv.T)
+    # make the (3,3) element 1
+    K = K / K[-1, -1]
     return K
     # END YOUR CODE HERE
 
@@ -80,7 +84,25 @@ Returns:
 '''
 def compute_angle_between_planes(vanishing_pair1, vanishing_pair2, K):
     # BEGIN YOUR CODE HERE
-    pass
+    # We need vanishing point's homogeneous coordinates.
+    v1_1 = np.hstack((vanishing_pair1[0], 1))
+    v1_2 = np.hstack((vanishing_pair1[1], 1))
+    v2_1 = np.hstack((vanishing_pair2[0], 1))
+    v2_2 = np.hstack((vanishing_pair2[1], 1))
+
+    # find line by vanishing point's cross product.
+    l1_horiz = np.cross(v1_1, v1_2)
+    l2_horiz = np.cross(v2_1, v2_2)
+
+    # We need Omega inverse for calculating theta.
+    W_inv = np.dot(K, K.T)
+
+    # Calculat the angle
+    cos_theta = np.dot(np.dot(l1_horiz.T, W_inv), l2_horiz) \
+        / (np.sqrt(np.dot(np.dot(l1_horiz.T, W_inv), l1_horiz)) * np.sqrt(np.dot(np.dot(l2_horiz.T, W_inv), l2_horiz)))
+    theta = np.arccos(cos_theta) / np.pi * 180
+
+    return theta
     # END YOUR CODE HERE
 
 '''
@@ -93,9 +115,37 @@ Arguments:
 Returns:
     R - the rotation matrix between camera 1 and camera 2
 '''
+
 def compute_rotation_matrix_between_cameras(vanishing_points1, vanishing_points2, K):
     # BEGIN YOUR CODE HERE
-    pass
+    # Remind v = Kd thus d = K^{-1}v / ||K^{-1}v||
+    v1  = np.hstack((vanishing_points1[0], 1))
+    v2  = np.hstack((vanishing_points1[1], 1))
+    v3  = np.hstack((vanishing_points1[2], 1))
+    v1b = np.hstack((vanishing_points2[0], 1))
+    v2b = np.hstack((vanishing_points2[1], 1))
+    v3b = np.hstack((vanishing_points2[2], 1))
+    K_inv = np.linalg.inv(K)
+    d1 = np.dot(K_inv,  v1)
+    d1 = d1 / np.linalg.norm(d1)
+    d2 = np.dot(K_inv,  v2)
+    d2 = d2 / np.linalg.norm(d2)
+    d3 = np.dot(K_inv,  v3)
+    d3 = d3 / np.linalg.norm(d3)
+    d1b = np.dot(K_inv, v1b)
+    d1b = d1b / np.linalg.norm(d1b)
+    d2b = np.dot(K_inv, v2b)
+    d2b = d2b / np.linalg.norm(d2b)
+    d3b = np.dot(K_inv, v3b)
+    d3b = d3b / np.linalg.norm(d3b)
+
+    # make matrix D = [d1 d2 d3] and Db = [d1b d2b d3b]
+    D = np.zeros((3, 3))
+    D  = np.column_stack(( d1,  d2,  d3))
+    Db = np.column_stack((d1b, d2b, d3b))
+    # Db = RD thus R = Db*D^{-1}
+    R = np.dot(Db, np.linalg.inv(D))
+    return R
     # END YOUR CODE HERE
 
 if __name__ == '__main__':
@@ -127,8 +177,9 @@ if __name__ == '__main__':
 
     # Part E: Compute the rotation matrix between the two cameras
     rotation_matrix = compute_rotation_matrix_between_cameras(np.array([v1, v2, v3]), np.array([v1b, v2b, v3b]), K_actual)
+    print()
     print("Rotation between two cameras:\n", rotation_matrix)
-    z,y,x = mat2euler(rotation_matrix)
+    z, y, x = mat2euler(rotation_matrix)
     print()
     print("Angle around z-axis (pointing out of camera): %f degrees" % (z * 180 / math.pi))
     print("Angle around y-axis (pointing vertically): %f degrees" % (y * 180 / math.pi))
