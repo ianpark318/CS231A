@@ -13,7 +13,23 @@ Returns:
 '''
 def compute_vanishing_point(points):
     # BEGIN YOUR CODE HERE
-    pass
+    points = points.astype(float)
+    p1 = points[0, :]
+    p2 = points[1, :]
+    p3 = points[2, :]
+    p4 = points[3, :]
+
+    # y = ax + b in 2D
+    a1 = (p2[1] - p1[1]) / (p2[0] - p1[0])
+    a2 = (p4[1] - p3[1]) / (p4[0] - p3[0])
+    b1 = p1[1] - a1 * p1[0]
+    b2 = p3[1] - a2 * p3[0]
+
+    # intersects for y = a1*x+b1 and y = a2*x+b2
+    x = (b2 - b1) / (a1 - a2)
+    y = (a1 * b2 - a2 * b1) / (a1 - a2)
+    vanishing_point = np.array([x, y])
+    return vanishing_point
     # END YOUR CODE HERE
 
 '''
@@ -27,7 +43,29 @@ Returns:
 '''
 def compute_K_from_vanishing_points(vanishing_points):
     # BEGIN YOUR CODE HERE
-    pass
+    # We know v1^T*W*v2=v2^T*W*v3=v3^T*W*v1=0
+    # So we can make Ax=0 shape for x = [w1, w4, w5, w6]
+    # and use SVD to A and get last column of V for x
+    v1 = vanishing_points[0]
+    v2 = vanishing_points[1]
+    v3 = vanishing_points[2]
+
+    # A has 3x4 shape
+    A0 = np.array([v1[0] * v2[0] + v1[1] * v2[1], v1[0] + v2[0], v1[1] + v2[1], 1])
+    A1 = np.array([v2[0] * v3[0] + v2[1] * v3[1], v2[0] + v3[0], v2[1] + v3[1], 1])
+    A2 = np.array([v3[0] * v1[0] + v3[1] * v1[1], v3[0] + v1[0], v3[1] + v1[1], 1])
+    A = np.vstack((A0, A1, A2))
+    _, _, Vt = np.linalg.svd(A)
+    V = Vt.T
+    x = V[:, -1]
+    W = np.array([[x[0], 0, x[1]],
+                  [0, x[0], x[2]],
+                  [x[1], x[2], x[3]]])
+    # W = (KK^T)^{-1}
+    # W = (K^T)^{-1}*K^{-1}
+    K_tran_inv = np.linalg.cholesky(W)
+    K = np.linalg.inv(K_tran_inv).T
+    return K
     # END YOUR CODE HERE
 
 '''
