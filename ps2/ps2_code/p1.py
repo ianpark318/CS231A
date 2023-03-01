@@ -2,6 +2,7 @@ import numpy as np
 from skimage.io import imread
 import matplotlib.pyplot as plt
 from epipolar_utils import *
+np.set_printoptions(precision=6, suppress=True)
 
 '''
 LLS_EIGHT_POINT_ALG  computes the fundamental matrix from matching points using 
@@ -17,8 +18,37 @@ Please see lecture notes and slides to see how the linear least squares eight
 point algorithm works
 '''
 def lls_eight_point_alg(points1, points2):
-    # TODO: Implement this method!
-    raise Exception('Not Implemented Error')
+    N = points1.shape[0]
+    W = np.ones((N, 9))
+    # make W matrix (N x 9)
+    for i in range(N):
+        u = points1[i, 0]; u_prime = points2[i, 0]
+        v = points1[i, 1]; v_prime = points2[i, 1]
+        W[i, 0] = u * u_prime
+        W[i, 1] = u * v_prime
+        W[i, 2] = u
+        W[i, 3] = u_prime * v
+        W[i, 4] = v * v_prime
+        W[i, 5] = v
+        W[i, 6] = u_prime
+        W[i, 7] = v_prime
+
+    _, _, Vt = np.linalg.svd(W)
+    V = Vt.T
+    # Last column of V would be F_hat (F11, F12, F13, F21, F22, F23, F31, F32, F33)
+    F_hat = V[:, -1].reshape((3, 3))
+    # Normalize for |F|=1 because V is orthogonal matrix (not orthonormal)
+    F_hat = F_hat / np.linalg.norm(F_hat)
+
+    # We found F_hat which may have full rank
+    # But true fundamental matrix has rank 2
+    # So we should look for a solution that is the best rank-2 approximation of F_hat.
+    U, S, Vt = np.linalg.svd(F_hat)
+    S_rank_2 = np.zeros((3, 3))
+    S_rank_2[0, 0] = S[0]
+    S_rank_2[1, 1] = S[1]
+    F = np.dot(np.dot(U, S_rank_2), Vt)
+    return F
 
 '''
 NORMALIZED_EIGHT_POINT_ALG  computes the fundamental matrix from matching points
@@ -34,8 +64,39 @@ Please see lecture notes and slides to see how the normalized eight
 point algorithm works
 '''
 def normalized_eight_point_alg(points1, points2):
-    # TODO: Implement this method!
-    raise Exception('Not Implemented Error')
+    # calculate each centroids
+    p_centroid = np.mean(points1, axis=0)
+    p_prime_centroid = np.mean(points2, axis=0)
+    # translate (the origin of the new coordinate system should be centroid)
+    t_p = (points1 - p_centroid)[:, 0:-1]
+    t_p_prime = (points2 - p_prime_centroid)[:, 0:-1]
+
+    # scaling factor (2 / mean_distance)
+    # if distance is sqrt(a^2 + b^2), the mean square distance would be (a^2 + b^2)
+    # The reason why s = np.sqrt(2 / np.mean(np.sum(t_p**2, axis=1))) is
+    # average of ((sa)^2 + (sb)^2) should be 2 pixels.
+    s = np.sqrt(2 / np.mean(np.sum(t_p**2, axis=1)))
+    s_prime = np.sqrt(2 / np.mean(np.sum(t_p_prime**2, axis=1)))
+
+    # So now we know scaling and translation matrix
+    # Thus we can build transformation matrix T and T_prime
+    # Translation first and then scaling occured
+    # Watch out for the sequence of translation and scaling
+    T = np.array([[s, 0, -(s * p_centroid[0])],
+                  [0, s, -(s * p_centroid[1])],
+                  [0, 0, 1]])
+    T_prime = np.array([[s_prime, 0, -(s * p_centroid[0])],
+                        [0, s_prime, -(s * p_centroid[1])],
+                        [0, 0, 1]])
+    q = np.dot(T, points1.T).T
+    q_prime = np.dot(T_prime, points2.T).T
+
+    # Find fundamental matrix with normalized points
+    F_q = lls_eight_point_alg(q, q_prime)
+
+    # De-normalize (F = T^T * F_q * T_prime)
+    F = np.dot(np.dot(T.T, F_q), T_prime)
+    return F
 
 '''
 PLOT_EPIPOLAR_LINES_ON_IMAGES given a pair of images and corresponding points,
@@ -70,7 +131,7 @@ def plot_epipolar_lines_on_images(points1, points2, im1, im2, F):
             plt.plot(x, y, '*b')
         plt.axis([0, im_width, im_height, 0])
 
-    # We change the figsize because matplotlib has weird behavior when 
+    # We change the figsize because matplotlib has weird behavior when
     # plotting images of different sizes next to each other. This
     # fix should be changed to something more robust.
     new_figsize = (8 * (float(max(im1.shape[1], im2.shape[1])) / min(im1.shape[1], im2.shape[1]))**2 , 6)
@@ -96,8 +157,16 @@ Returns:
     average_distance - the average distance of each point to the epipolar line
 '''
 def compute_distance_to_epipolar_lines(points1, points2, F):
-    # TODO: Implement this method!
-    raise Exception('Not Implemented Error')
+    # l = Fp' and l' = F^Tp
+    l = np.dot(F, points2.T)
+
+    # Distance between point and line is |ax0+by0+c| / sqrt(a^2+b^2)
+    a = l[0, :]; b = l[1, :]; c = l[2, :]
+    x = points1[:, 0]; y = points1[:, 1]
+    dist = np.abs(a * x + b * y + c) / np.sqrt(a ** 2 + b ** 2)
+    avg_dist = np.mean(dist)
+    return avg_dist
+
 
 if __name__ == '__main__':
     for im_set in ['data/set1', 'data/set2']:
@@ -123,9 +192,23 @@ if __name__ == '__main__':
         # Running the normalized eight point algorithm
         F_normalized = normalized_eight_point_alg(points1, points2)
 
-        pFp = [points2[i].dot(F_normalized.dot(points1[i])) 
+        pFp = [points1[i].dot(F_normalized.dot(points2[i]))
             for i in range(points1.shape[0])]
-        print("p'^T F p =", np.abs(pFp).max())
+        # The Original string was "p'^T F p" but it's wrong.
+        # If we built W matrix (uu', uv', u, u'v, vv', v, u', v', 1)
+        # What we want to find is p^T F p' = 0
+        # So the line 195 and 211 changed for these reason.
+
+        # Well, in pdf 4.1 The Eight-Point Algorithm,
+        # W is composed of the (uu', uv', u', uv', vv', v', u, v, 1)
+        # It is exactly the transposed structure of the above F matrix.
+        # but I guess it's wrong cause p^T F p' derives (uu', uv', u, u'v, vv', v, u', v', 1) form.
+        # If you made W matrix as (uu', uv', u', uv', vv', v', u, v, 1) structure,
+        # That means you derived it from p'^T F p = 0
+        # So you have to find F = T'^T @ F_q @ T (  because (T^T @ F_q @ T)^T  )
+
+        # But, why none of stanford students ask their professor to correct these error? lol
+        print("p^T F p' =", np.abs(pFp).max())
         print("Fundamental Matrix from normalized 8-point algorithm:\n", \
             F_normalized)
         print("Distance to lines in image 1 for normalized:", \
@@ -138,3 +221,4 @@ if __name__ == '__main__':
         plot_epipolar_lines_on_images(points1, points2, im1, im2, F_normalized)
 
         plt.show()
+
