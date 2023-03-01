@@ -72,12 +72,8 @@ def normalized_eight_point_alg(points1, points2):
     t_p_prime = (points2 - p_prime_centroid)[:, 0:-1]
 
     # scaling factor (2 / mean_distance)
-    # if distance is sqrt(a^2 + b^2), the mean square distance would be (a^2 + b^2)
-    # The reason why s = np.sqrt(2 / np.mean(np.sum(t_p**2, axis=1))) is
-    # average of ((sa)^2 + (sb)^2) should be 2 pixels.
-    s = np.sqrt(2 / np.mean(np.sum(t_p**2, axis=1)))
-    s_prime = np.sqrt(2 / np.mean(np.sum(t_p_prime**2, axis=1)))
-
+    s = 2 / np.mean(np.sqrt(np.sum(t_p ** 2, axis=1)))
+    s_prime = 2 / np.mean(np.sqrt(np.sum(t_p_prime ** 2, axis=1)))
     # So now we know scaling and translation matrix
     # Thus we can build transformation matrix T and T_prime
     # Translation first and then scaling occured
@@ -119,7 +115,7 @@ def plot_epipolar_lines_on_images(points1, points2, im1, im2, F):
     def plot_epipolar_lines_on_image(points1, points2, im, F):
         im_height = im.shape[0]
         im_width = im.shape[1]
-        lines = F.T.dot(points2.T)
+        lines = F.dot(points2.T) # These should be also Fp' not F^Tp'
         plt.imshow(im, cmap='gray')
         for line in lines.T:
             a,b,c = line
@@ -197,7 +193,7 @@ if __name__ == '__main__':
         # The Original string was "p'^T F p" but it's wrong.
         # If we built W matrix (uu', uv', u, u'v, vv', v, u', v', 1)
         # What we want to find is p^T F p' = 0
-        # So the line 195 and 211 changed for these reason.
+        # So the line 191 and 207 changed for these reason.
 
         # Well, in pdf 4.1 The Eight-Point Algorithm,
         # W is composed of the (uu', uv', u', uv', vv', v', u, v, 1)
