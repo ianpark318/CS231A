@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import scipy.io as sio
 import matplotlib.gridspec as gridspec
 from epipolar_utils import *
+np.set_printoptions(precision=6, suppress=True)
 
 '''
 FACTORIZATION_METHOD The Tomasi and Kanade Factorization Method to determine
@@ -18,8 +19,29 @@ Returns:
     motion - the motion matrix
 '''
 def factorization_method(points_im1, points_im2):
-    # TODO: Implement this method!
-    raise Exception('Not Implemented Error')
+    # First find average of x_ik
+    x1_mean = np.mean(points_im1, axis=0)
+    x2_mean = np.mean(points_im2, axis=0)
+
+    # Calculate x_hat for each image
+    x1_hat = (points_im1 - x1_mean)[:, 0:2].T
+    x2_hat = (points_im2 - x2_mean)[:, 0:2].T
+
+    # Build D matrix
+    D = np.vstack((x1_hat, x2_hat))
+    U, S, Vt = np.linalg.svd(D, full_matrices=True)
+
+    # We need rank 3 sigma
+    S_rank3 = np.diag(S[0:3])
+    U_3 = U[:, 0:3]
+    Vt_3 = Vt[0:3, :]
+
+    # Tomasi and Kanade concluded that a robust choice
+    # of the factorization is M=U*sqrt(Sigma) and S=sqrt(Sigma)*Vt
+    M = np.dot(U_3, S_rank3 ** 0.5)
+    S = np.dot(S_rank3 ** 0.5, Vt_3)
+    # Remind that M and S can't be unique
+    return S, M
 
 if __name__ == '__main__':
     for im_set in ['data/set1', 'data/set1_subset']:
