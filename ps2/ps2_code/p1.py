@@ -21,17 +21,19 @@ def lls_eight_point_alg(points1, points2):
     N = points1.shape[0]
     W = np.ones((N, 9))
     # make W matrix (N x 9)
+    # we are finding F such that (points2)^T * F * points1 = 0
+    # so W matrix's each row is (uu', u'v, u', uv', vv', v', u, v, 1)
     for i in range(N):
         u = points1[i, 0]; u_prime = points2[i, 0]
         v = points1[i, 1]; v_prime = points2[i, 1]
         W[i, 0] = u * u_prime
-        W[i, 1] = u * v_prime
-        W[i, 2] = u
-        W[i, 3] = u_prime * v
+        W[i, 1] = u_prime * v
+        W[i, 2] = u_prime
+        W[i, 3] = u * v_prime
         W[i, 4] = v * v_prime
-        W[i, 5] = v
-        W[i, 6] = u_prime
-        W[i, 7] = v_prime
+        W[i, 5] = v_prime
+        W[i, 6] = u
+        W[i, 7] = v
 
     _, _, Vt = np.linalg.svd(W)
     V = Vt.T
@@ -90,8 +92,10 @@ def normalized_eight_point_alg(points1, points2):
     # Find fundamental matrix with normalized points
     F_q = lls_eight_point_alg(q, q_prime)
 
-    # De-normalize (F = T^T * F_q * T_prime)
-    F = np.dot(np.dot(T.T, F_q), T_prime)
+    # De-normalize is (F = T^T * F_q * T_prime) if (points1)^T * F * points2 = 0
+    # but now F is fundamental matrix such that (points2)^T * F * points1 = 0
+    # So de-normalize equation should be F = T'^T * F_q * T
+    F = np.dot(np.dot(T_prime.T, F_q), T)
     return F
 
 '''
@@ -115,7 +119,7 @@ def plot_epipolar_lines_on_images(points1, points2, im1, im2, F):
     def plot_epipolar_lines_on_image(points1, points2, im, F):
         im_height = im.shape[0]
         im_width = im.shape[1]
-        lines = F.dot(points2.T) # These should be also Fp' not F^Tp'
+        lines = F.T.dot(points2.T) # These should be also Fp' not F^Tp'
         plt.imshow(im, cmap='gray')
         for line in lines.T:
             a,b,c = line
@@ -153,8 +157,10 @@ Returns:
     average_distance - the average distance of each point to the epipolar line
 '''
 def compute_distance_to_epipolar_lines(points1, points2, F):
+    # F - the fundamental matrix such that (points2)^T * F * points1 = 0
     # l = Fp' and l' = F^Tp
-    l = np.dot(F, points2.T)
+    # so in this problem, l = F*points1 and l'=F^T*points2
+    l = np.dot(F.T, points2.T)
 
     # Distance between point and line is |ax0+by0+c| / sqrt(a^2+b^2)
     a = l[0, :]; b = l[1, :]; c = l[2, :]
@@ -188,23 +194,9 @@ if __name__ == '__main__':
         # Running the normalized eight point algorithm
         F_normalized = normalized_eight_point_alg(points1, points2)
 
-        pFp = [points1[i].dot(F_normalized.dot(points2[i]))
+        pFp = [points2[i].dot(F_normalized.dot(points1[i]))
             for i in range(points1.shape[0])]
-        # The Original string was "p'^T F p" but it's wrong.
-        # If we built W matrix (uu', uv', u, u'v, vv', v, u', v', 1)
-        # What we want to find is p^T F p' = 0
-        # So the line 191 and 207 changed for these reason.
-
-        # Well, in pdf 4.1 The Eight-Point Algorithm,
-        # W is composed of the (uu', uv', u', uv', vv', v', u, v, 1)
-        # It is exactly the transposed structure of the above F matrix.
-        # but I guess it's wrong cause p^T F p' derives (uu', uv', u, u'v, vv', v, u', v', 1) form.
-        # If you made W matrix as (uu', uv', u', uv', vv', v', u, v, 1) structure,
-        # That means you derived it from p'^T F p = 0
-        # So you have to find F = T'^T @ F_q @ T (  because (T^T @ F_q @ T)^T  )
-
-        # But, why none of stanford students ask their professor to correct these error? lol
-        print("p^T F p' =", np.abs(pFp).max())
+        print("p'^T F p =", np.abs(pFp).max())
         print("Fundamental Matrix from normalized 8-point algorithm:\n", \
             F_normalized)
         print("Distance to lines in image 1 for normalized:", \
