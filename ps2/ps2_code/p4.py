@@ -161,10 +161,10 @@ Returns:
 def estimate_RT_from_E(E, image_points, K):
     def cam1tocam2(P, RT):
         # Remind that moving reference system is
-        # R^{-1}(P+t)
+        # R^{-1}(P-t)
         R = RT[:, 0:3]
         T = RT[:, -1]
-        P = P + T
+        P = P - T
         P = np.dot(np.linalg.inv(R), P)
         return P
 
